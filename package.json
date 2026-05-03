@@ -1,0 +1,20 @@
+{
+  "name": "opencopilot",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that adapts .github/copilot/ customizations to work natively in OpenCode",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "latest",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.0",
+    "typescript": "^5.8.3"
+  }
+}

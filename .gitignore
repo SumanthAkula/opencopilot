@@ -1,0 +1,6 @@
+.specify
+node_modules/
+dist/
+*.log
+.env*
+bun.lockb
