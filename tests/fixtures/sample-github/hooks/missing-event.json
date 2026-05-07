@@ -1,0 +1,4 @@
+{
+  "script": "echo hello",
+  "description": "Hook with no event field"
+}

@@ -1,0 +1,5 @@
+{
+  "event": "onCodeReview",
+  "script": "run-code-review.sh",
+  "description": "Runs on code review"
+}

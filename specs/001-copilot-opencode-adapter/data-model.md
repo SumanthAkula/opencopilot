@@ -50,6 +50,7 @@ Represents a parsed `.github/agents/*.md` or `.github/agents/*.agent.md` file.
 | `model` | `string \| null` | Frontmatter `model` | Normalized to `provider/model-id` format if recognizable, else null |
 | `tools` | `string[] \| null` | Frontmatter `tools` | null = all tools; `[]` = deny all |
 | `userInvocable` | `boolean` | Frontmatter `user-invocable` | Default: `true` |
+| `disableModelInvocation` | `boolean` | Frontmatter `disable-model-invocation` | Default: `false`; if `true`, forces `hidden: true` regardless of `userInvocable` |
 | `target` | `string \| null` | Frontmatter `target` | Informational only; not used for filtering |
 
 **Derived OpenCode agent config**:
@@ -60,7 +61,8 @@ Represents a parsed `.github/agents/*.md` or `.github/agents/*.agent.md` file.
   mode: "subagent",
   prompt: agentDef.systemPrompt,
   ...(agentDef.model ? { model: agentDef.model } : {}),
-  hidden: !agentDef.userInvocable,
+  // disable-model-invocation takes precedence over user-invocable
+  hidden: agentDef.disableModelInvocation ? true : !agentDef.userInvocable,
   permission: derivePermissions(agentDef.tools),
 }
 ```
@@ -89,6 +91,59 @@ Represents a parsed `.github/agents/*.md` or `.github/agents/*.agent.md` file.
   `-copilot` and a warning is logged
 - `systemPrompt` length is capped at 30,000 characters (Copilot spec limit; truncation
   logged as warning)
+
+---
+
+### `CopilotPromptFile`
+
+Represents a parsed `.github/prompts/**/*.prompt.md` file.  
+Added in: `001-copilot-opencode-adapter` gap resolution (US1).
+
+| Field | Type | Source | Notes |
+|---|---|---|---|
+| `filePath` | `string` | File path on disk | Absolute path |
+| `description` | `string \| null` | Frontmatter `description` | Used for logging; informational only |
+| `mode` | `"instruction" \| "assistant" \| null` | Frontmatter `mode` | `null` when field is absent; treated as `"instruction"` in mapper |
+| `content` | `string` | File body (after frontmatter) | Raw Markdown text |
+| `lastModified` | `number` | `fs.stat().mtimeMs` | Used for cache invalidation |
+
+**Validation rules**:
+- `content` MUST be non-empty (after whitespace trim) to be included; empty files are skipped with a warning
+- `mode: "assistant"` is treated identically to `mode: "instruction"` in v1 (both mapped to global `applyTo: ["**/*"]` instructions)
+- Unknown `mode` values default to `"instruction"` with a warning
+
+**Mapping to OpenCode**:
+- All prompt files are injected with global scope via `experimental.chat.system.transform`
+- Equivalent to a `CopilotInstructionFile` with `applyTo: ["**/*"]`
+- Formatted as `## Prompt from <relative-path>\n\n<content>`
+
+---
+
+### `CopilotHookDefinition`
+
+Represents a parsed `.github/hooks/**/*.json` file.  
+Added in: `001-copilot-opencode-adapter` gap resolution (US2).
+
+| Field | Type | Source | Notes |
+|---|---|---|---|
+| `filePath` | `string` | File path on disk | Absolute path |
+| `event` | `string` | JSON `event` field | Copilot lifecycle hook event name |
+| `script` | `string \| null` | JSON `script` field | Shell command (recognized but not executed in v1) |
+| `description` | `string \| null` | JSON `description` field | Informational only |
+
+**Supported event mappings** (v1):
+
+| Copilot event | OpenCode equivalent | v1 behavior |
+|---|---|---|
+| `onChatStart` | Session startup | Log message; script not executed |
+| `onFileSave` | `file.watcher.updated` | Already handled by existing event hook |
+| `onCodeReview` | N/A | Warning logged (no code-review mode in OpenCode) |
+| *(any other)* | N/A | Warning logged |
+
+**Validation rules**:
+- `event` field is REQUIRED; files without it are skipped with a warning
+- Invalid JSON files are skipped with a warning
+- Non-object JSON (arrays, primitives) are skipped with a warning
 
 ---
 
@@ -123,6 +178,8 @@ The in-memory state maintained by the plugin between hook invocations.
 | `instructions` | `CopilotInstructionFile[]` | Sorted: copilot-instructions.md first, then path-specific files |
 | `agents` | `Map<string, CopilotAgentDefinition>` | Keyed by `normalizedKey` |
 | `skills` | `Map<string, CopilotSkill>` | Keyed by `name` |
+| `prompts` | `CopilotPromptFile[]` | Ordered by filesystem discovery |
+| `hooks` | `CopilotHookDefinition[]` | Ordered by filesystem discovery |
 | `watchedPaths` | `Set<string>` | Paths under `.github/` being watched for changes |
 | `recentlyEditedFiles` | `Map<string, Set<string>>` | sessionID → Set of recently-modified file paths, used for `applyTo` evaluation |
 | `initialized` | `boolean` | True after first scan completes |
@@ -151,6 +208,23 @@ The in-memory state maintained by the plugin between hook invocations.
 | `model` | `agent.model` | Normalized to `provider/model-id` |
 | `tools` list | `agent.permission` | Via `derivePermissions()` |
 | `user-invocable: false` | `agent.hidden: true` | Direct mapping |
+| `disable-model-invocation: true` | `agent.hidden: true` | Takes precedence over `user-invocable` |
+
+### Prompt Files → System Prompt
+
+| Copilot concept | OpenCode mechanism | Plugin action |
+|---|---|---|
+| `.github/prompts/**/*.prompt.md` | System prompt (global) | `experimental.chat.system.transform`: always inject, no `applyTo` filtering |
+| `mode: "instruction"` | Instruction content | Formatted as `## Prompt from <path>` |
+| `mode: "assistant"` | Instruction content (same as instruction in v1) | Formatted as `## Prompt from <path>` |
+
+### Hooks → OpenCode Events
+
+| Copilot event | OpenCode action | Notes |
+|---|---|---|
+| `onChatStart` | Log message on startup | Script not executed in v1 |
+| `onFileSave` | `file.watcher.updated` already handled | Re-scan triggered by existing event hook |
+| `onCodeReview` | Warning logged | Not supported in OpenCode |
 
 ### Skills → OpenCode Skill Tool
 
@@ -171,4 +245,11 @@ The in-memory state maintained by the plugin between hook invocations.
 | Instruction file has empty body | Warning | File skipped |
 | Skill `name` mismatches directory | Warning | Directory name wins; logged |
 | File parse error (invalid frontmatter) | Warning | File skipped; error logged |
+| Prompt file has empty body | Warning | File skipped; logged |
+| Prompt file has unknown `mode` value | Warning | Defaults to `"instruction"`; logged |
+| Hook file has invalid JSON | Warning | File skipped; logged |
+| Hook file missing `event` field | Warning | File skipped; logged |
+| Hook has unknown event type | Warning | Registered but may have no effect; logged |
+| Hook `onCodeReview` event | Warning | Not supported in OpenCode; logged |
+| Unknown model name | Warning | Dynamic provider inference attempted; falls back to `undefined` if unresolvable |
 | `experimental.chat.system.transform` not available | Error (non-fatal) | Falls back to `session.prompt` approach; behavior degraded but not broken |

@@ -63,8 +63,48 @@ export interface CopilotAgentDefinition {
   tools: string[] | null
   /** Whether the agent is visible in the @ autocomplete menu. Default: true */
   userInvocable: boolean
+  /**
+   * If true, the agent cannot be invoked by the user (disable-model-invocation).
+   * Maps to hidden: true in OpenCode agent config.
+   */
+  disableModelInvocation: boolean
   /** frontmatter `target` field — parsed, not used for filtering */
   target: string | null
+}
+
+// ---------------------------------------------------------------------------
+// CopilotPromptFile
+// Represents a parsed .github/prompts/*.prompt.md file.
+// ---------------------------------------------------------------------------
+export interface CopilotPromptFile {
+  /** Absolute path to the file on disk */
+  filePath: string
+  /** Optional description from frontmatter */
+  description: string | null
+  /**
+   * Mode from frontmatter: "instruction" or "assistant".
+   * Defaults to "instruction" if not specified.
+   */
+  mode: "instruction" | "assistant" | null
+  /** Raw Markdown content (after frontmatter) */
+  content: string
+  /** mtime in ms — used for cache invalidation */
+  lastModified: number
+}
+
+// ---------------------------------------------------------------------------
+// CopilotHookDefinition
+// Represents a parsed .github/hooks/*.json file.
+// ---------------------------------------------------------------------------
+export interface CopilotHookDefinition {
+  /** Absolute path to the file on disk */
+  filePath: string
+  /** Copilot hook event name (e.g., "onChatStart", "onCodeReview", "onFileSave") */
+  event: string
+  /** Shell command to execute (not executed in v1; logged only) */
+  script: string | null
+  /** Informational description */
+  description: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +137,10 @@ export interface PluginCache {
   agents: Map<string, CopilotAgentDefinition>
   /** Keyed by skill name */
   skills: Map<string, CopilotSkill>
+  /** Parsed .github/prompts/*.prompt.md files */
+  prompts: CopilotPromptFile[]
+  /** Parsed .github/hooks/*.json hook definitions */
+  hooks: CopilotHookDefinition[]
   /** Paths under .github/ currently tracked */
   watchedPaths: Set<string>
   /**
@@ -114,6 +158,8 @@ export function emptyCache(): PluginCache {
     instructions: [],
     agents: new Map(),
     skills: new Map(),
+    prompts: [],
+    hooks: [],
     watchedPaths: new Set(),
     recentlyEditedFiles: new Map(),
     initialized: false,

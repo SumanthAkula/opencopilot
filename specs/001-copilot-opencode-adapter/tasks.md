@@ -33,10 +33,10 @@
 
 **Purpose**: Project initialization and dependency verification
 
-- [ ] T001 Verify Bun runtime and TypeScript 5+ are available in development environment
-- [ ] T002 [P] Verify required dependencies are installed: `js-yaml` (already present per research.md Decision 1)
-- [ ] T003 [P] Create test directory structure: `tests/unit/`, `tests/integration/` (if not already present)
-- [ ] T004 [P] Verify OpenCode Plugin API types are accessible from `@opencode-ai/plugin`
+- [X] T001 Verify Bun runtime and TypeScript 5+ are available in development environment
+- [X] T002 [P] Verify required dependencies are installed: `js-yaml` (already present per research.md Decision 1)
+- [X] T003 [P] Create test directory structure: `tests/unit/`, `tests/integration/` (if not already present)
+- [X] T004 [P] Verify OpenCode Plugin API types are accessible from `@opencode-ai/plugin`
 
 ---
 
@@ -48,19 +48,19 @@
 
 ### Types Updates in `src/types.ts`
 
-- [ ] T005 Add `CopilotPromptFile` interface to `src/types.ts`:
+- [X] T005 Add `CopilotPromptFile` interface to `src/types.ts`:
   - Fields: `filePath: string`, `description: string | null`, `mode: "instruction" | "assistant" | null`, `content: string`, `lastModified: number`
   - Reference: `plan.md` lines 213-227 (data-model.md amendments)
   - Effort: 30 min
   - Test Requirement: Verify interface compiles and matches planned field types
 
-- [ ] T006 Add `CopilotHookDefinition` interface to `src/types.ts`:
+- [X] T006 Add `CopilotHookDefinition` interface to `src/types.ts`:
   - Fields: `filePath: string`, `event: string`, `script: string | null`, `description: string | null`
   - Reference: `plan.md` lines 229-245
   - Effort: 30 min
   - Test Requirement: Verify interface compiles and matches planned field types
 
-- [ ] T007 Update `PluginCache` interface in `src/types.ts`:
+- [X] T007 Update `PluginCache` interface in `src/types.ts`:
   - Add `prompts: CopilotPromptFile[]` field
   - Add `hooks: CopilotHookDefinition[]` field
   - Reference: `plan.md` line 277
@@ -69,19 +69,19 @@
 
 ### Scanner Foundation in `src/scanner.ts`
 
-- [ ] T008 Add `scanPromptFiles(githubDir): Promise<CopilotPromptFile[]>` function stub to `src/scanner.ts`:
+- [X] T008 Add `scanPromptFiles(githubDir): Promise<CopilotPromptFile[]>` function stub to `src/scanner.ts`:
   - Pattern: `.github/prompts/**/*.prompt.md`
   - Reference: `plan.md` lines 280-283
   - Effort: 30 min (stub only; full implementation in Phase 3)
   - Test Requirement: Function exists and returns `CopilotPromptFile[]` type
 
-- [ ] T009 Add `scanHookFiles(githubDir): Promise<CopilotHookDefinition[]>` function stub to `src/scanner.ts`:
+- [X] T009 Add `scanHookFiles(githubDir): Promise<CopilotHookDefinition[]>` function stub to `src/scanner.ts`:
   - Pattern: `.github/hooks/**/*.json`
   - Reference: `plan.md` lines 284-287
   - Effort: 30 min (stub only; full implementation in Phase 4)
   - Test Requirement: Function exists and returns `CopilotHookDefinition[]` type
 
-- [ ] T010 Update `scanGithubDir()` in `src/scanner.ts` to initialize new cache fields:
+- [X] T010 Update `scanGithubDir()` in `src/scanner.ts` to initialize new cache fields:
   - Initialize `cache.prompts = []` and `cache.hooks = []`
   - Reference: `plan.md` line 288
   - Effort: 15 min
@@ -89,7 +89,7 @@
 
 ### Mapper Foundation in `src/mapper.ts`
 
-- [ ] T011 Add `normalizeModel()` function enhancements to `src/mapper.ts`:
+- [X] T011 Add `normalizeModel()` function enhancements to `src/mapper.ts`:
   - Add dot/hyphen normalization (e.g., `claude-3.5-sonnet` → `claude-3-5-sonnet`)
   - Add version suffix handling (e.g., `claude-sonnet-4` → `anthropic/claude-sonnet-4-20250514`)
   - Reference: `plan.md` lines 192-195, 292-293
@@ -111,7 +111,7 @@
 
 ### Scanner Implementation
 
-- [ ] T012 [US1] Implement `scanPromptFiles()` in `src/scanner.ts`:
+- [X] T012 [US1] Implement `scanPromptFiles()` in `src/scanner.ts`:
   - Scan `.github/prompts/` directory recursively for `*.prompt.md` files
   - For each file: read content, parse frontmatter using existing `parseFrontmatter()`, extract `mode` and `description`
   - Return array of `CopilotPromptFile` objects with `lastModified` from `fs.stat()`
@@ -122,7 +122,7 @@
 
 ### Parser Updates (Reuse Existing)
 
-- [ ] T013 [US1] [P] Verify `parseFrontmatter()` in `src/parser.ts` handles prompt file format:
+- [X] T013 [US1] [P] Verify `parseFrontmatter()` in `src/parser.ts` handles prompt file format:
   - Prompt files use YAML frontmatter delimited by `---` (same as instruction files)
   - `mode` field can be `"instruction"` or `"assistant"` (default: `"instruction"`)
   - `description` field is optional
@@ -132,7 +132,7 @@
 
 ### Mapper Implementation
 
-- [ ] T014 [US1] Add `mapPromptToInstruction()` function to `src/mapper.ts`:
+- [X] T014 [US1] Add `mapPromptToInstruction()` function to `src/mapper.ts`:
   - Convert `CopilotPromptFile` to OpenCode instruction format
   - Set `applyTo: ["**/*"]` (as per plan.md line 98: "with `applyTo: "**/*"`")
   - Format as Markdown section for system prompt injection using `buildInstructionSection()` pattern
@@ -143,7 +143,7 @@
 
 ### Plugin Integration
 
-- [ ] T015 [US1] Update `.opencode/plugins/opencopilot.ts` to handle prompt files:
+- [X] T015 [US1] Update `.opencode/plugins/opencopilot.ts` to handle prompt files:
   - In plugin initialization: call `scanPromptFiles(githubDir)` and store in `cache.prompts`
   - In `systemTransformHook`: inject prompt file content similar to instruction files (always injected since `applyTo: ["**/*"]`)
   - In `eventHook`: re-scan prompt files on `.github/prompts/` file changes
@@ -153,12 +153,12 @@
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Write unit tests for `scanPromptFiles()` in `tests/unit/scanner-prompts.test.ts`:
+- [X] T016 [P] [US1] Write unit tests for `scanPromptFiles()` in `tests/unit/scanner-prompts.test.ts`:
   - Test Cases (from plan.md line 338): Finds `.github/prompts/*.prompt.md` files, parses frontmatter correctly, handles missing `mode` field (defaults to `instruction`), skips empty files, handles invalid frontmatter gracefully
   - Effort: 1 hour
   - Expected Coverage: 90%+
 
-- [ ] T017 [P] [US1] Write unit tests for `mapPromptToInstruction()` in `tests/unit/mapper-prompts.test.ts`:
+- [X] T017 [P] [US1] Write unit tests for `mapPromptToInstruction()` in `tests/unit/mapper-prompts.test.ts`:
   - Verify mapped instructions have `applyTo: ["**/*"]`
   - Verify content is preserved
   - Verify `mode: "assistant"` is handled same as `"instruction"`
@@ -180,7 +180,7 @@
 
 ### Scanner Implementation
 
-- [ ] T018 [US2] Implement `scanHookFiles()` in `src/scanner.ts`:
+- [X] T018 [US2] Implement `scanHookFiles()` in `src/scanner.ts`:
   - Scan `.github/hooks/` directory for `*.json` files
   - Parse JSON, validate required `event` field
   - Return array of `CopilotHookDefinition` objects
@@ -192,7 +192,7 @@
 
 ### Mapper Implementation
 
-- [ ] T019 [US2] Add hook-to-event mapping logic to `src/mapper.ts` or plugin:
+- [X] T019 [US2] Add hook-to-event mapping logic to `src/mapper.ts` or plugin:
   - Map Copilot events to OpenCode hooks per `plan.md` lines 145-149:
     - `onChatStart` → `session.created` (log message for v1; script not executed)
     - `onCodeReview` → N/A (warning logged, not supported)
@@ -204,7 +204,7 @@
 
 ### Plugin Integration
 
-- [ ] T020 [US2] Update `.opencode/plugins/opencopilot.ts` to handle hooks:
+- [X] T020 [US2] Update `.opencode/plugins/opencopilot.ts` to handle hooks:
   - In plugin initialization: call `scanHookFiles(githubDir)` and store in `cache.hooks`
   - For `onChatStart` hooks: log appropriate message during `session.created` equivalent
   - For `onFileSave` hooks: already handled by existing `eventHook` (file.watcher.updated)
@@ -216,12 +216,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] Write unit tests for `scanHookFiles()` in `tests/unit/scanner-hooks.test.ts`:
+- [X] T021 [P] [US2] Write unit tests for `scanHookFiles()` in `tests/unit/scanner-hooks.test.ts`:
   - Test Cases (from plan.md line 339): Finds `.github/hooks/*.json` files, parses valid JSON correctly, skips invalid JSON, handles missing `event` field, handles unknown events (warns)
   - Effort: 1 hour
   - Expected Coverage: 90%+
 
-- [ ] T022 [P] [US2] Write integration test for hook bridging in `tests/integration/hooks-bridge.test.ts`:
+- [X] T022 [P] [US2] Write integration test for hook bridging in `tests/integration/hooks-bridge.test.ts`:
   - Scenario (from plan.md line 349): Create `.github/hooks/onChatStart.json`, start OpenCode session, check logs — Hook recognized, message logged
   - Effort: 1.5 hours
   - Expected Coverage: End-to-end hook bridging verified
@@ -240,7 +240,7 @@
 
 ### Scanner Updates
 
-- [ ] T023 [US3] Update `scanAgentFiles()` in `src/scanner.ts` to parse `disable-model-invocation`:
+- [X] T023 [US3] Update `scanAgentFiles()` in `src/scanner.ts` to parse `disable-model-invocation`:
   - Parse `disable-model-invocation` field from agent frontmatter using `fmBool(fm, "disable-model-invocation", false)`
   - Add `disableModelInvocation: boolean` field to `CopilotAgentDefinition` interface in `types.ts` (UPDATE T005)
   - Pass parsed value to mapper
@@ -250,7 +250,7 @@
 
 ### Mapper Updates
 
-- [ ] T024 [US3] Update `toOpenCodeAgent()` in `src/mapper.ts` to handle `disableModelInvocation`:
+- [X] T024 [US3] Update `toOpenCodeAgent()` in `src/mapper.ts` to handle `disableModelInvocation`:
   - If `def.disableModelInvocation === true`, force `hidden: true` regardless of `def.userInvocable`
   - Logic (from plan.md lines 174-178):
     - `disable-model-invocation: true` → `hidden: true` (Force hide)
@@ -262,7 +262,7 @@
 
 ### Plugin Integration
 
-- [ ] T025 [US3] Verify plugin integration (no changes needed):
+- [X] T025 [US3] Verify plugin integration (no changes needed):
   - `configHook` already calls `toOpenCodeAgent(def)` which now includes the fix
   - Verify through existing tests
   - Reference: `opencopilot.ts` lines 55-61, `mapper.ts` lines 120-142
@@ -271,12 +271,12 @@
 
 ### Tests for User Story 3
 
-- [ ] T026 [P] [US3] Write unit tests for `disableModelInvocation` parsing in `tests/unit/scanner-disable.test.ts`:
+- [X] T026 [P] [US3] Write unit tests for `disableModelInvocation` parsing in `tests/unit/scanner-disable.test.ts`:
   - Test Cases (from plan.md line 341): `true` → `hidden: true`, `false` → respects `user-invocable`, Not set → respects `user-invocable`
   - Effort: 1 hour
   - Expected Coverage: 95%+
 
-- [ ] T027 [P] [US3] Write unit tests for `toOpenCodeAgent()` disable-model-invocation handling in `tests/unit/mapper-disable.test.ts`:
+- [X] T027 [P] [US3] Write unit tests for `toOpenCodeAgent()` disable-model-invocation handling in `tests/unit/mapper-disable.test.ts`:
   - Verify `hidden: true` is set correctly when flag is true
   - Verify interaction with `user-invocable` field
   - Effort: 1 hour
@@ -297,7 +297,7 @@
 
 ### Types Updates
 
-- [ ] T028 [US4] Update `KNOWN_MODELS` constant in `src/mapper.ts`:
+- [X] T028 [US4] Update `KNOWN_MODELS` constant in `src/mapper.ts`:
   - Add 20+ models per plan.md lines 187-191:
     - OpenAI: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o1`, `o1-pro`, `o3`, `o3-mini`
     - Anthropic: `claude-3.5-sonnet`, `claude-3.5-haiku`, `claude-sonnet-4`, `claude-opus-4`
@@ -309,7 +309,7 @@
 
 ### Mapper Enhancements
 
-- [ ] T029 [US4] Enhance `normalizeModel()` in `src/mapper.ts` with dynamic resolution:
+- [X] T029 [US4] Enhance `normalizeModel()` in `src/mapper.ts` with dynamic resolution:
   - Add dot/hyphen normalization: `claude-3.5-sonnet` → `claude-3-5-sonnet` (check in KNOWN_MODELS)
   - Add version suffix handling: `claude-sonnet-4` → `anthropic/claude-sonnet-4-20250514`
   - Add regex-based fallback for unknown models (e.g., `/^gpt-4\./` → `openai/` prefix)
@@ -320,7 +320,7 @@
 
 ### Plugin Integration
 
-- [ ] T030 [US4] Verify plugin integration (no changes needed):
+- [X] T030 [US4] Verify plugin integration (no changes needed):
   - `toOpenCodeAgent()` already calls `normalizeModel(def.model)` at `mapper.ts` line 129
   - The enhanced `normalizeModel()` will automatically benefit from the improvements
   - Reference: `mapper.ts` lines 128-130
@@ -329,12 +329,12 @@
 
 ### Tests for User Story 4
 
-- [ ] T031 [P] [US4] Write unit tests for KNOWN_MODELS expansion in `tests/unit/mapper-models.test.ts`:
+- [X] T031 [P] [US4] Write unit tests for KNOWN_MODELS expansion in `tests/unit/mapper-models.test.ts`:
   - Test Cases (from plan.md line 340): All known models normalize correctly, unknown models return `undefined`, dot/hyphen variations handled, logs warning for unknowns
   - Effort: 1 hour
   - Expected Coverage: 95%+
 
-- [ ] T032 [P] [US4] Write unit tests for dynamic model resolution in `tests/unit/mapper-models.test.ts`:
+- [X] T032 [P] [US4] Write unit tests for dynamic model resolution in `tests/unit/mapper-models.test.ts`:
   - Verify static mappings work
   - Verify dynamic resolution with regex patterns
   - Verify fallback for unresolvable models
@@ -351,27 +351,27 @@
 
 ### Integration Tests
 
-- [ ] T033 [P] Add integration test for prompt file end-to-end flow in `tests/integration/prompt-flow.test.ts`:
+- [X] T033 [P] Add integration test for prompt file end-to-end flow in `tests/integration/prompt-flow.test.ts`:
   - Scenario (from plan.md line 347): Create `.github/prompts/test.prompt.md`, start OpenCode session, check system prompt — Prompt content injected
   - Effort: 1.5 hours
 
-- [ ] T034 [P] Add integration test for model normalization end-to-end in `tests/integration/model-flow.test.ts`:
+- [X] T034 [P] Add integration test for model normalization end-to-end in `tests/integration/model-flow.test.ts`:
   - Scenario (from plan.md line 349): Create agent with `model: "gpt-4.1"`, start OpenCode session, check agent config — Model normalized to `openai/gpt-4.1`
   - Effort: 1.5 hours
 
-- [ ] T035 [P] Add integration test for disable-model-invocation end-to-end in `tests/integration/disable-flow.test.ts`:
+- [X] T035 [P] Add integration test for disable-model-invocation end-to-end in `tests/integration/disable-flow.test.ts`:
   - Scenario (from plan.md line 350): Create agent with `disable-model-invocation: true`, start OpenCode session, check agent config — `hidden: true` set
   - Effort: 1.5 hours
 
 ### Documentation Updates
 
-- [ ] T036 Update `README.md` mapping table to reflect newly addressed gaps:
+- [X] T036 Update `README.md` mapping table to reflect newly addressed gaps:
   - Update "Known Gaps" table (README.md lines 150-159) to mark Prompt Files and Hooks as ✅ Supported (now that we've implemented them)
   - Update "Copilot → OpenCode Mapping Table" (README.md lines 131-147) to show `.github/prompts/*.prompt.md` and `.github/hooks/*.json` as ✅ Supported
   - Reference: `plan.md` line 327 (T016)
   - Effort: 30 min
 
-- [ ] T037 Update `specs/001-copilot-opencode-adapter/data-model.md` with new entities:
+- [X] T037 Update `specs/001-copilot-opencode-adapter/data-model.md` with new entities:
   - Add `CopilotPromptFile` entity documentation (if not already added in Phase 2)
   - Add `CopilotHookDefinition` entity documentation (if not already added in Phase 2)
   - Reference: `plan.md` line 328 (T017)
@@ -379,10 +379,10 @@
 
 ### Code Quality
 
-- [ ] T038 [P] Run linter and formatter: `bun run lint && bun run format` (or equivalent):
+- [X] T038 [P] Run linter and formatter: `bun run lint && bun run format` (or equivalent):
   - Effort: 30 min
 
-- [ ] T039 [P] Update existing tests to cover new functionality:
+- [X] T039 [P] Update existing tests to cover new functionality:
   - Ensure all new code paths are covered
   - Reference: `plan.md` line 398 (tests summary: 5 new test suites)
   - Effort: 1.5 hours

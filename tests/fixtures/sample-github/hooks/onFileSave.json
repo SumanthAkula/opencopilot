@@ -1,0 +1,4 @@
+{
+  "event": "onFileSave",
+  "description": "Runs when a file is saved"
+}

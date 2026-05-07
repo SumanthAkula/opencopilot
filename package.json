@@ -1,11 +1,41 @@
 {
-  "name": "opencopilot",
+  "name": "opencode-copilot",
   "version": "0.1.0",
   "description": "OpenCode plugin that adapts .github/copilot/ customizations to work natively in OpenCode",
+  "keywords": [
+    "opencode",
+    "copilot",
+    "github-copilot",
+    "opencode-plugin",
+    "ai",
+    "plugin"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anomalyco/opencode-plugins.git"
+  },
+  "homepage": "https://github.com/anomalyco/opencode-plugins#readme",
+  "bugs": {
+    "url": "https://github.com/anomalyco/opencode-plugins/issues"
+  },
   "type": "module",
+  "bin": {
+    "opencopilot": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "check": "tsc --noEmit",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun run scripts/bundle-plugin.ts",
+    "bundle": "bun run scripts/bundle-plugin.ts",
     "test": "bun test"
   },
   "dependencies": {

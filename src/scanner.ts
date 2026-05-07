@@ -15,6 +15,8 @@ import {
   type CopilotInstructionFile,
   type CopilotAgentDefinition,
   type CopilotSkill,
+  type CopilotPromptFile,
+  type CopilotHookDefinition,
   type PluginCache,
   emptyCache,
 } from "./types.ts"
@@ -166,6 +168,7 @@ export async function scanAgentFiles(githubDir: string): Promise<CopilotAgentDef
     const model = fmString(frontmatter, "model")
     const tools = fmStringArray(frontmatter, "tools")
     const userInvocable = fmBool(frontmatter, "user-invocable", true)
+    const disableModelInvocation = fmBool(frontmatter, "disable-model-invocation", false)
     const target = fmString(frontmatter, "target")
 
     const systemPrompt = body.length > 30_000 ? (() => {
@@ -183,6 +186,7 @@ export async function scanAgentFiles(githubDir: string): Promise<CopilotAgentDef
       model,
       tools,
       userInvocable,
+      disableModelInvocation,
       target,
     })
   }
@@ -276,6 +280,151 @@ export async function scanSkillFiles(githubDir: string): Promise<CopilotSkill[]>
 }
 
 // ---------------------------------------------------------------------------
+// Prompt file scanning (T008 in tasks.md / T012 in US1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Scan .github/prompts/ for Copilot prompt files.
+ * Pattern: .github/prompts/**\/*.prompt.md
+ *
+ * Converts each file to a CopilotPromptFile with:
+ * - frontmatter: mode, description
+ * - content: file body after frontmatter
+ */
+export async function scanPromptFiles(githubDir: string): Promise<CopilotPromptFile[]> {
+  const promptsDir = path.join(githubDir, "prompts")
+  if (!existsSync(promptsDir)) return []
+
+  return globPromptFiles(promptsDir)
+}
+
+/** Recursively find all *.prompt.md files under a directory */
+async function globPromptFiles(dir: string): Promise<CopilotPromptFile[]> {
+  const results: CopilotPromptFile[] = []
+  let entries: string[]
+  try {
+    entries = await readdir(dir)
+  } catch {
+    return results
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry)
+    const stats = await stat(fullPath).catch(() => null)
+    if (!stats) continue
+
+    if (stats.isDirectory()) {
+      const nested = await globPromptFiles(fullPath)
+      results.push(...nested)
+    } else if (entry.endsWith(".prompt.md")) {
+      const content = await readFile(fullPath, "utf8").catch(() => null)
+      if (!content) continue
+
+      const { frontmatter, body } = parseFrontmatter(content, fullPath)
+
+      if (!body.trim()) {
+        console.warn(`[opencopilot] Warning: Empty prompt file skipped: ${fullPath}`)
+        continue
+      }
+
+      const rawMode = fmString(frontmatter, "mode")
+      let mode: CopilotPromptFile["mode"]
+      if (rawMode === "assistant") {
+        mode = "assistant"
+      } else if (rawMode === "instruction") {
+        mode = "instruction"
+      } else if (rawMode !== null) {
+        console.warn(`[opencopilot] Warning: Unknown mode "${rawMode}" in prompt file, defaulting to "instruction": ${fullPath}`)
+        mode = "instruction"
+      } else {
+        mode = null
+      }
+
+      const description = fmString(frontmatter, "description")
+
+      results.push({
+        filePath: fullPath,
+        description,
+        mode,
+        content: body,
+        lastModified: stats.mtimeMs,
+      })
+    }
+  }
+  return results
+}
+
+// ---------------------------------------------------------------------------
+// Hook file scanning (T009 in tasks.md / T018 in US2)
+// ---------------------------------------------------------------------------
+
+/** Known Copilot hook events and whether they're supported in OpenCode */
+const KNOWN_HOOK_EVENTS = new Set(["onChatStart", "onCodeReview", "onFileSave"])
+
+/**
+ * Scan .github/hooks/ for Copilot hook definition files.
+ * Pattern: .github/hooks/**\/*.json
+ *
+ * Parses each JSON file and validates the required `event` field.
+ * Invalid JSON files and missing event fields are skipped with a warning.
+ */
+export async function scanHookFiles(githubDir: string): Promise<CopilotHookDefinition[]> {
+  const hooksDir = path.join(githubDir, "hooks")
+  if (!existsSync(hooksDir)) return []
+
+  let entries: string[]
+  try {
+    entries = await readdir(hooksDir)
+  } catch {
+    return []
+  }
+
+  const results: CopilotHookDefinition[] = []
+
+  for (const entry of entries) {
+    if (!entry.endsWith(".json")) continue
+    const fullPath = path.join(hooksDir, entry)
+    const stats = await stat(fullPath).catch(() => null)
+    if (!stats || !stats.isFile()) continue
+
+    const rawContent = await readFile(fullPath, "utf8").catch(() => null)
+    if (!rawContent) continue
+
+    let parsed: Record<string, unknown>
+    try {
+      const json = JSON.parse(rawContent)
+      if (json === null || typeof json !== "object" || Array.isArray(json)) {
+        console.warn(`[opencopilot] Warning: Hook file is not a JSON object, skipping: ${fullPath}`)
+        continue
+      }
+      parsed = json as Record<string, unknown>
+    } catch {
+      console.warn(`[opencopilot] Warning: Invalid JSON in hook file, skipping: ${fullPath}`)
+      continue
+    }
+
+    const event = typeof parsed["event"] === "string" ? parsed["event"].trim() : null
+    if (!event) {
+      console.warn(`[opencopilot] Warning: Hook file missing required "event" field, skipping: ${fullPath}`)
+      continue
+    }
+
+    if (!KNOWN_HOOK_EVENTS.has(event)) {
+      console.warn(
+        `[opencopilot] Warning: Unknown hook event "${event}" in ${fullPath}; hook will be registered but may have no effect`,
+      )
+    }
+
+    const script = typeof parsed["script"] === "string" ? parsed["script"].trim() || null : null
+    const description = typeof parsed["description"] === "string" ? parsed["description"].trim() || null : null
+
+    results.push({ filePath: fullPath, event, script, description })
+  }
+
+  return results
+}
+
+// ---------------------------------------------------------------------------
 // Top-level scanner (T008 + T016 + T020)
 // ---------------------------------------------------------------------------
 
@@ -294,13 +443,17 @@ export async function scanGithubDir(githubDir: string): Promise<PluginCache> {
   }
 
   try {
-    const [instructions, agents, skills] = await Promise.all([
+    const [instructions, agents, skills, prompts, hooks] = await Promise.all([
       scanInstructionFiles(githubDir),
       scanAgentFiles(githubDir),
       scanSkillFiles(githubDir),
+      scanPromptFiles(githubDir),
+      scanHookFiles(githubDir),
     ])
 
     cache.instructions = instructions
+    cache.prompts = prompts
+    cache.hooks = hooks
 
     for (const agent of agents) {
       cache.agents.set(agent.normalizedKey, agent)
@@ -312,7 +465,7 @@ export async function scanGithubDir(githubDir: string): Promise<PluginCache> {
 
     cache.initialized = true
     console.error(
-      `[opencopilot] Loaded: ${instructions.length} instruction files, ${agents.length} agents, ${cache.skills.size} skills from .github/`,
+      `[opencopilot] Loaded: ${instructions.length} instruction files, ${agents.length} agents, ${cache.skills.size} skills, ${prompts.length} prompt files, ${hooks.length} hooks from .github/`,
     )
   } catch (err) {
     console.warn(`[opencopilot] Warning: scan failed: ${(err as Error).message}`)

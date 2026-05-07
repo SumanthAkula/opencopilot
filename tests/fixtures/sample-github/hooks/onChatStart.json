@@ -1,0 +1,5 @@
+{
+  "event": "onChatStart",
+  "script": "echo 'Chat started'",
+  "description": "Runs when chat starts"
+}

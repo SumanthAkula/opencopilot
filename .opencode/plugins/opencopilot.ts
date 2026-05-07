@@ -21,11 +21,14 @@ import {
   scanInstructionFiles,
   scanAgentFiles,
   scanSkillFiles,
+  scanPromptFiles,
+  scanHookFiles,
 } from "../../src/scanner.ts"
 import {
   buildInstructionSection,
   buildSkillsListing,
   toOpenCodeAgent,
+  mapPromptToInstruction,
 } from "../../src/mapper.ts"
 import { matchesAny } from "../../src/glob-matcher.ts"
 import { parseFrontmatter, fmString } from "../../src/parser.ts"
@@ -65,8 +68,49 @@ export const OpenCopilotPlugin: Plugin = async ({ worktree }) => {
   }
 
   // ---------------------------------------------------------------------------
+  // Hook bridging: process cached Copilot hooks on session start (T020/US2)
+  // Called once after initialization for onChatStart hooks.
+  // ---------------------------------------------------------------------------
+  function processCopilotHooks(): void {
+    if (!cache.initialized || cache.hooks.length === 0) return
+
+    for (const hook of cache.hooks) {
+      switch (hook.event) {
+        case "onChatStart":
+          // Log message — script execution not supported in v1
+          console.error(
+            `[opencopilot] Hook: onChatStart hook registered from ${hook.filePath}` +
+            (hook.description ? ` (${hook.description})` : "") +
+            (hook.script ? ` — Note: script execution not supported in v1 (script: "${hook.script}")` : ""),
+          )
+          break
+        case "onCodeReview":
+          // OpenCode has no code-review mode — log warning
+          console.warn(
+            `[opencopilot] Warning: onCodeReview hook in ${hook.filePath} is not supported in OpenCode (no code-review mode)`,
+          )
+          break
+        case "onFileSave":
+          // Already handled by the existing file.watcher.updated event hook
+          console.error(
+            `[opencopilot] Hook: onFileSave hook registered from ${hook.filePath} — handled via file.watcher.updated event`,
+          )
+          break
+        default:
+          console.warn(
+            `[opencopilot] Warning: Unknown hook event "${hook.event}" in ${hook.filePath} — no OpenCode equivalent`,
+          )
+      }
+    }
+  }
+
+  // Run hook bridging on startup
+  processCopilotHooks()
+
+  // ---------------------------------------------------------------------------
   // Hook: experimental.chat.system.transform
-  // Inject instructions + skills listing into system prompt (T012 + T021)
+  // Inject instructions + prompt files + skills listing into system prompt
+  // (T012 + T021 + T015/US1)
   // ---------------------------------------------------------------------------
   async function systemTransformHook(
     input: { sessionID?: string },
@@ -87,6 +131,11 @@ export const OpenCopilotPlugin: Plugin = async ({ worktree }) => {
             output.system.push(buildInstructionSection(file, githubDir))
           }
         }
+      }
+
+      // Inject prompt files (always injected — applyTo: "**/*" equivalent) (T015/US1)
+      for (const promptFile of cache.prompts) {
+        output.system.push(mapPromptToInstruction(promptFile, githubDir))
       }
 
       // Inject skills listing if any skills are cached
@@ -165,6 +214,14 @@ export const OpenCopilotPlugin: Plugin = async ({ worktree }) => {
       } else if (normalizedPath.includes("/skills/")) {
         const skills = await scanSkillFiles(githubDir)
         cache.skills = new Map(skills.map((s) => [s.name, s]))
+      } else if (normalizedPath.includes("/prompts/")) {
+        // Re-scan prompt files on change (T015/US1)
+        cache.prompts = await scanPromptFiles(githubDir)
+      } else if (normalizedPath.includes("/hooks/")) {
+        // Re-scan hook definitions on change (T020/US2)
+        cache.hooks = await scanHookFiles(githubDir)
+        // Re-process hooks after re-scan
+        processCopilotHooks()
       }
     } catch (err) {
       console.warn(`[opencopilot] event hook error: ${(err as Error).message}`)
