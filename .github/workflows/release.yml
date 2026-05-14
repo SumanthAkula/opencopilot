@@ -6,6 +6,7 @@ on:
       - "v*.*.*"
 
 permissions:
+  id-token: write
   contents: write
 
 jobs:
@@ -119,8 +120,11 @@ jobs:
       - name: Setup Node.js (for npm publish)
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Upgrade npm (trusted publishing requires npm >= 11.5.1)
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: bun install
@@ -129,6 +133,4 @@ jobs:
         run: bun run bundle
 
       - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+        run: npm publish --access public --provenance
