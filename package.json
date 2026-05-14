@@ -15,9 +15,9 @@
     "type": "git",
     "url": "https://github.com/SumanthAkula/opencopilot.git"
   },
-  "homepage": "https://github.com/SumanthAkula/opencopilot#readme",
+  "homepage": "https://github.com/SumanthAkula/opencopilot/blob/main/README.md",
   "bugs": {
-    "url": "https://github.com/anomalyco/opencode-plugins/issues"
+    "url": "https://github.com/SumanthAkula/opencopilot/issues"
   },
   "type": "module",
   "bin": {

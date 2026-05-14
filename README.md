@@ -23,7 +23,7 @@ npx opencode-copilot install
 ```
 
 This will:
-1. Download the latest `opencopilot.ts` from [GitHub Releases](https://github.com/anomalyco/opencode-plugins/releases/latest)
+1. Download the latest `opencopilot.ts` from [GitHub Releases](https://github.com/SumanthAkula/opencopilot/releases/latest)
 2. Place it at `.opencode/plugins/opencopilot.ts` in the current directory
 3. Create (or update) `.opencode/package.json` with the required dependencies
 
@@ -48,7 +48,7 @@ npx opencode-copilot install --force
 If you prefer not to use npm/npx, download directly with curl:
 
 ```bash
-curl -fsSL https://github.com/anomalyco/opencode-plugins/releases/latest/download/opencopilot.ts \
+curl -fsSL https://github.com/SumanthAkula/opencopilot/releases/latest/download/opencopilot.ts \
   -o .opencode/plugins/opencopilot.ts
 ```
 
