@@ -17,8 +17,8 @@ import { fileURLToPath } from "node:url"
 
 // --- Constants ---
 
-const GITHUB_OWNER = "anomalyco"
-const GITHUB_REPO = "opencode-plugins"
+const GITHUB_OWNER = "SumanthAkula"
+const GITHUB_REPO = "opencopilot"
 const ASSET_NAME = "opencopilot.ts"
 const FALLBACK_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/${ASSET_NAME}`
 

@@ -21,7 +21,7 @@
   },
   "type": "module",
   "bin": {
-    "opencopilot": "bin/install.js"
+    "opencode-copilot": "bin/install.js"
   },
   "files": [
     "bin/",

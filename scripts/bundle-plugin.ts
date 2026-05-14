@@ -17,7 +17,7 @@ const pkgPath = join(import.meta.dir, "..", "package.json")
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { version: string; name: string }
 const version = pkg.version
 
-const REPO_URL = "https://github.com/anomalyco/opencode-plugins"
+const REPO_URL = "https://github.com/SumanthAkula/opencopilot"
 const ENTRYPOINT = join(import.meta.dir, "..", ".opencode", "plugins", "opencopilot.ts")
 const OUTFILE = join(import.meta.dir, "..", "dist", "opencopilot.ts")
 const OUTDIR = join(import.meta.dir, "..", "dist")
