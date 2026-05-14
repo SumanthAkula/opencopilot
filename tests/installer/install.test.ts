@@ -27,7 +27,7 @@ const INSTALLER = join(import.meta.dir, "..", "..", "bin", "install.js")
 // Fixture content simulating a real GitHub release asset
 const MOCK_VERSION = "1.2.3"
 const MOCK_PLUGIN_CONTENT = `// opencopilot v${MOCK_VERSION}
-// https://github.com/anomalyco/opencode-plugins
+// https://github.com/SumanthAkula/opencopilot
 // @bun
 import type { Plugin } from "@opencode-ai/plugin";
 var OpenCopilotPlugin = async ({ worktree }) => {
@@ -42,7 +42,7 @@ export {
 
 const MOCK_VERSION_2 = "1.3.0"
 const MOCK_PLUGIN_CONTENT_V2 = `// opencopilot v${MOCK_VERSION_2}
-// https://github.com/anomalyco/opencode-plugins
+// https://github.com/SumanthAkula/opencopilot
 // @bun
 import type { Plugin } from "@opencode-ai/plugin";
 var OpenCopilotPlugin = async ({ worktree }) => {
@@ -268,7 +268,7 @@ describe("bin/install.js — installer integration tests", () => {
     const result = runInstaller(["install"], tmpDir, badUrl)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain("github.com/anomalyco/opencode-plugins/releases/latest/download/opencopilot.ts")
+    expect(result.stderr).toContain("github.com/SumanthAkula/opencopilot/releases/latest/download/opencopilot.ts")
   })
 
   it("10. Already up to date: same version banner → exit 0, 'up to date' message, file unchanged", () => {
