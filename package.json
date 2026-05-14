@@ -1,6 +1,6 @@
 {
   "name": "opencode-copilot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenCode plugin that adapts .github/copilot/ customizations to work natively in OpenCode",
   "keywords": [
     "opencode",
@@ -13,7 +13,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SumanthAkula/opencopilot.git"
+    "url": "git+https://github.com/SumanthAkula/opencopilot.git"
   },
   "homepage": "https://github.com/SumanthAkula/opencopilot/blob/main/README.md",
   "bugs": {
