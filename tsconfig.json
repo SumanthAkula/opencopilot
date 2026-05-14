@@ -13,6 +13,7 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }
